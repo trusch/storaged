@@ -13,6 +13,7 @@ import (
 type StorageSuite struct {
 	suite.Suite
 	store Storage
+	typ   string
 }
 
 func (suite *StorageSuite) toBytes(val interface{}) []byte {
@@ -24,15 +25,22 @@ func (suite *StorageSuite) toBytes(val interface{}) []byte {
 func (suite *StorageSuite) TearDownTest() {
 	err := suite.store.Close()
 	suite.NoError(err)
-	os.RemoveAll("./test-store")
-	store, err := NewLevelDBStorage("./test-store")
-	suite.NoError(err)
-	suite.NotNil(store)
-	suite.store = store
+	os.RemoveAll("./test-store.db")
+	if suite.typ == "leveldb" {
+		store, err := NewLevelDBStorage("./test-store.db")
+		suite.NoError(err)
+		suite.NotNil(store)
+		suite.store = store
+	} else {
+		store, err := NewBoltStorage("./test-store.db")
+		suite.NoError(err)
+		suite.NotNil(store)
+		suite.store = store
+	}
 }
 
 func (suite *StorageSuite) TearDownSuite() {
-	os.RemoveAll("./test-store")
+	os.RemoveAll("./test-store.db")
 }
 
 func (suite *StorageSuite) TestPut() {
@@ -113,11 +121,22 @@ func (suite *StorageSuite) TestGetRange() {
 	suite.False(ok)
 }
 
-func TestStorage(t *testing.T) {
-	store, err := NewLevelDBStorage("./test-store")
+func TestLevelDBStorage(t *testing.T) {
+	store, err := NewLevelDBStorage("./test-store.db")
 	assert.NoError(t, err)
 	assert.NotNil(t, store)
 	s := new(StorageSuite)
 	s.store = store
+	s.typ = "leveldb"
+	suite.Run(t, s)
+}
+
+func TestBoltStorage(t *testing.T) {
+	store, err := NewBoltStorage("./test-store.db")
+	assert.NoError(t, err)
+	assert.NotNil(t, store)
+	s := new(StorageSuite)
+	s.store = store
+	s.typ = "bolt"
 	suite.Run(t, s)
 }
