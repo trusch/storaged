@@ -2,13 +2,10 @@ package storage
 
 import "time"
 
-// A Object is a JSON serializable object
-type Object map[string]interface{}
-
 // KeyValueStorage is the interface for key-value-storage backends
 type KeyValueStorage interface {
-	Put(key string, value Object) error
-	Get(key string) (Object, error)
+	Put(key string, value []byte) error
+	Get(key string) ([]byte, error)
 	Delete(key string) error
 }
 

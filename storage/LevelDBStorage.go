@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"strconv"
 	"time"
@@ -20,8 +18,6 @@ type LevelDBStorage struct {
 
 // NewLevelDBStorage creates a new storage instance
 func NewLevelDBStorage(path string) (*LevelDBStorage, error) {
-	gob.Register(Object{})
-	gob.Register([]Object{})
 	o := &opt.Options{
 		Filter: filter.NewBloomFilter(10),
 	}
@@ -34,25 +30,17 @@ func NewLevelDBStorage(path string) (*LevelDBStorage, error) {
 }
 
 // Put saves a value to the db
-func (store *LevelDBStorage) Put(key string, value Object) error {
-	buf := &bytes.Buffer{}
-	encoder := gob.NewEncoder(buf)
-	err := encoder.Encode(value)
-	if err != nil {
-		return err
-	}
-	return store.db.Put([]byte(key), buf.Bytes(), nil)
+func (store *LevelDBStorage) Put(key string, value []byte) error {
+	return store.db.Put([]byte(key), value, nil)
 }
 
 // Get retrieves a value from db
-func (store *LevelDBStorage) Get(key string) (Object, error) {
+func (store *LevelDBStorage) Get(key string) ([]byte, error) {
 	bs, err := store.db.Get([]byte(key), nil)
 	if err != nil {
 		return nil, err
 	}
-	decoder := gob.NewDecoder(bytes.NewReader(bs))
-	result := Object{}
-	return result, decoder.Decode(&result)
+	return bs, nil
 }
 
 // Delete drops an entry from db

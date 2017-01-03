@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -12,6 +13,12 @@ import (
 type StorageSuite struct {
 	suite.Suite
 	store Storage
+}
+
+func (suite *StorageSuite) toBytes(val interface{}) []byte {
+	bs, err := json.Marshal(val)
+	suite.NoError(err)
+	return bs
 }
 
 func (suite *StorageSuite) TearDownTest() {
@@ -29,20 +36,20 @@ func (suite *StorageSuite) TearDownSuite() {
 }
 
 func (suite *StorageSuite) TestPut() {
-	obj := Object{
+	obj := suite.toBytes(map[string]interface{}{
 		"int":    123,
 		"float":  321.123,
 		"string": "string",
-		"object": Object{"foo": "bar"},
-	}
+		"object": map[string]interface{}{"foo": "bar"},
+	})
 	err := suite.store.Put("test", obj)
 	suite.NoError(err)
 }
 
 func (suite *StorageSuite) TestComplexPut() {
-	obj := Object{
-		"a": Object{"a": []Object{Object{"a": 1}}},
-	}
+	obj := suite.toBytes(map[string]interface{}{
+		"object": []map[string]interface{}{map[string]interface{}{"foo": "bar"}},
+	})
 	err := suite.store.Put("test", obj)
 	suite.NoError(err)
 	restored, err := suite.store.Get("test")
@@ -50,21 +57,13 @@ func (suite *StorageSuite) TestComplexPut() {
 	suite.Equal(obj, restored)
 }
 
-func (suite *StorageSuite) TestWeirdPut() {
-	obj := Object{
-		"a": suite,
-	}
-	err := suite.store.Put("test", obj)
-	suite.Error(err)
-}
-
 func (suite *StorageSuite) TestGet() {
-	obj := Object{
+	obj := suite.toBytes(map[string]interface{}{
 		"int":    123,
 		"float":  321.123,
 		"string": "string",
-		"object": Object{"foo": "bar"},
-	}
+		"object": map[string]interface{}{"foo": "bar"},
+	})
 	err := suite.store.Put("test", obj)
 	suite.NoError(err)
 	restored, err := suite.store.Get("test")
@@ -78,12 +77,12 @@ func (suite *StorageSuite) TestGetNonExisting() {
 }
 
 func (suite *StorageSuite) TestDelete() {
-	obj := Object{
+	obj := suite.toBytes(map[string]interface{}{
 		"int":    123,
 		"float":  321.123,
 		"string": "string",
-		"object": Object{"foo": "bar"},
-	}
+		"object": map[string]interface{}{"foo": "bar"},
+	})
 	err := suite.store.Put("test", obj)
 	suite.NoError(err)
 	err = suite.store.Delete("test")
