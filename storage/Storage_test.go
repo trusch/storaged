@@ -122,7 +122,7 @@ func (suite *StorageSuite) TestGetRange() {
 }
 
 func TestLevelDBStorage(t *testing.T) {
-	store, err := NewLevelDBStorage("./test-store.db")
+	store, err := NewMetaStorage("leveldb://test-store.db")
 	assert.NoError(t, err)
 	assert.NotNil(t, store)
 	s := new(StorageSuite)
@@ -132,7 +132,7 @@ func TestLevelDBStorage(t *testing.T) {
 }
 
 func TestBoltStorage(t *testing.T) {
-	store, err := NewBoltStorage("./test-store.db")
+	store, err := NewMetaStorage("bolt://test-store.db")
 	assert.NoError(t, err)
 	assert.NotNil(t, store)
 	s := new(StorageSuite)
