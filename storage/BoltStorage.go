@@ -93,6 +93,7 @@ func (store *BoltStorage) GetRange(key string, from time.Time, to time.Time) (ch
 	go store.db.View(func(tx *bolt.Tx) error {
 		b, _, err := store.getBucketForKey(tx, "ts/"+key+"/")
 		if err != nil {
+			close(ch)
 			return err
 		}
 		c := b.Cursor()
