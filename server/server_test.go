@@ -130,7 +130,7 @@ func (suite *ServerSuite) TestGetRangeWithN() {
 	decoder := json.NewDecoder(strings.NewReader(res))
 	err = decoder.Decode(&slice)
 	suite.NoError(err)
-	suite.True(math.Abs(1.-(float64(len(slice))/float64(n))) < 0.15)
+	suite.True(math.Abs(1.-(float64(len(slice))/float64(n))) < 0.15, fmt.Sprintf("%v", math.Abs(1.-(float64(len(slice))/float64(n)))))
 }
 
 func (suite *ServerSuite) request(method, path string, data string) (string, error) {
