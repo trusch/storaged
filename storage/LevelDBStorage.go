@@ -31,12 +31,12 @@ func NewLevelDBStorage(path string) (*LevelDBStorage, error) {
 
 // Put saves a value to the db
 func (store *LevelDBStorage) Put(key string, value []byte) error {
-	return store.db.Put([]byte(key), value, nil)
+	return store.db.Put([]byte("kv/"+key), value, nil)
 }
 
 // Get retrieves a value from db
 func (store *LevelDBStorage) Get(key string) ([]byte, error) {
-	bs, err := store.db.Get([]byte(key), nil)
+	bs, err := store.db.Get([]byte("kv/"+key), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -45,12 +45,12 @@ func (store *LevelDBStorage) Get(key string) ([]byte, error) {
 
 // Delete drops an entry from db
 func (store *LevelDBStorage) Delete(key string) error {
-	return store.db.Delete([]byte(key), nil)
+	return store.db.Delete([]byte("kv/"+key), nil)
 }
 
 // AddValue saves a value to the given timeseries
 func (store *LevelDBStorage) AddValue(key string, value float64) error {
-	keyBs := []byte(fmt.Sprintf("%v%v", key, time.Now().UnixNano()))
+	keyBs := []byte(fmt.Sprintf("ts/%v%v", key, time.Now().UnixNano()))
 	valBs := FloatToBytes(value)
 	return store.db.Put(keyBs, valBs, nil)
 }
@@ -58,8 +58,8 @@ func (store *LevelDBStorage) AddValue(key string, value float64) error {
 // GetRange returns a channel which will give all values in a timerange
 func (store *LevelDBStorage) GetRange(key string, from time.Time, to time.Time) (chan *TimeSeriesEntry, error) {
 	ch := make(chan *TimeSeriesEntry, 64)
-	startKey := []byte(fmt.Sprintf("%v%v", key, from.UnixNano()))
-	endKey := []byte(fmt.Sprintf("%v%v", key, to.UnixNano()))
+	startKey := []byte(fmt.Sprintf("ts/%v%v", key, from.UnixNano()))
+	endKey := []byte(fmt.Sprintf("ts/%v%v", key, to.UnixNano()))
 	iter := store.db.NewIterator(&util.Range{Start: startKey, Limit: endKey}, nil)
 	if err := iter.Error(); err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (store *LevelDBStorage) GetRange(key string, from time.Time, to time.Time) 
 		for iter.Next() {
 			keyBs := iter.Key()
 			valBs := iter.Value()
-			nanos, err := strconv.ParseInt(string(keyBs[len(key):]), 10, 64)
+			nanos, err := strconv.ParseInt(string(keyBs[len(key)+3:]), 10, 64)
 			if err != nil {
 				continue
 			}
