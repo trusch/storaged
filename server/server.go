@@ -70,6 +70,9 @@ func (srv *Server) constructRouter() {
 	router.PathPrefix("/v1/ts/").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		srv.handleGetRange(w, r)
 	})
+	router.PathPrefix("/v1/ts/").Methods("DELETE").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv.handleDeleteRange(w, r)
+	})
 	srv.server.Handler = router
 }
 
@@ -179,6 +182,22 @@ func (srv *Server) handleGetRange(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Write([]byte("]"))
+}
+
+func (srv *Server) handleDeleteRange(w http.ResponseWriter, r *http.Request) {
+	key := r.URL.Path[7:]
+	f, _ := strconv.ParseInt(r.FormValue("from"), 10, 64)
+	t, _ := strconv.ParseInt(r.FormValue("to"), 10, 64)
+	if t == 0 {
+		t = time.Now().UnixNano()
+	}
+	from := time.Unix(0, f)
+	to := time.Unix(0, t)
+	err := srv.store.DeleteRange(key, from, to)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 }
 
 func reduceStream(input chan *storage.TimeSeriesEntry, from, to time.Time, desiredPoints int64) chan *storage.TimeSeriesEntry {

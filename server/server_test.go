@@ -88,16 +88,16 @@ func (suite *ServerSuite) TestBadAddValue() {
 }
 
 func (suite *ServerSuite) TestGetRange() {
-	res, err := suite.request("POST", "/ts/foo", "value=0")
+	res, err := suite.request("POST", "/ts/foo?value=0", "")
 	suite.NoError(err)
 	suite.Empty(res)
-	res, err = suite.request("POST", "/ts/foo", "value=1")
+	res, err = suite.request("POST", "/ts/foo?value=1", "")
 	suite.NoError(err)
 	suite.Empty(res)
-	res, err = suite.request("POST", "/ts/foo", "value=2")
+	res, err = suite.request("POST", "/ts/foo?value=2", "")
 	suite.NoError(err)
 	suite.Empty(res)
-	res, err = suite.request("POST", "/ts/foo", "value=3")
+	res, err = suite.request("POST", "/ts/foo?value=3", "")
 	suite.NoError(err)
 	suite.Empty(res)
 	res, err = suite.request("GET", "/ts/foo", "")
@@ -111,6 +111,37 @@ func (suite *ServerSuite) TestGetRange() {
 	suite.Equal(1., slice[1]["value"])
 	suite.Equal(2., slice[2]["value"])
 	suite.Equal(3., slice[3]["value"])
+}
+
+func (suite *ServerSuite) TestDeleteRange() {
+	res, err := suite.request("POST", "/ts/foo?value=0", "")
+	suite.NoError(err)
+	suite.Empty(res)
+	res, err = suite.request("POST", "/ts/foo?value=1", "")
+	suite.NoError(err)
+	suite.Empty(res)
+
+	t := time.Now()
+
+	res, err = suite.request("POST", "/ts/foo?value=2", "")
+	suite.NoError(err)
+	suite.Empty(res)
+	res, err = suite.request("POST", "/ts/foo?value=3", "")
+	suite.NoError(err)
+	suite.Empty(res)
+
+	_, err = suite.request("DELETE", fmt.Sprintf("/ts/foo?to=%v", t.UnixNano()), "")
+	suite.NoError(err)
+
+	res, err = suite.request("GET", "/ts/foo", "")
+	suite.NoError(err)
+	slice := make([]map[string]interface{}, 0)
+	decoder := json.NewDecoder(strings.NewReader(res))
+	err = decoder.Decode(&slice)
+	suite.NoError(err)
+	suite.Equal(2, len(slice))
+	suite.Equal(2., slice[0]["value"])
+	suite.Equal(3., slice[1]["value"])
 }
 
 func (suite *ServerSuite) TestGetRangeWithN() {
