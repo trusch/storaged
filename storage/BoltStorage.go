@@ -29,11 +29,11 @@ func NewBoltStorage(path string) (Storage, error) {
 // Put saves a value to the db
 func (store *BoltStorage) Put(key string, value []byte) error {
 	return store.db.Update(func(tx *bolt.Tx) error {
-		b, key, err := store.getOrCreateBucketForKey(tx, "kv/"+key)
+		b, k, err := store.getOrCreateBucketForKey(tx, "kv/"+key)
 		if err != nil {
 			return err
 		}
-		if err := b.Put([]byte(key), value); err != nil {
+		if err := b.Put([]byte(k), value); err != nil {
 			return err
 		}
 		return nil
@@ -111,6 +111,23 @@ func (store *BoltStorage) GetRange(key string, from time.Time, to time.Time) (ch
 		return nil
 	})
 	return ch, nil
+}
+
+// DeleteRange deletes a range from a timeseries
+func (store *BoltStorage) DeleteRange(key string, from time.Time, to time.Time) error {
+	return store.db.Update(func(tx *bolt.Tx) error {
+		b, _, err := store.getBucketForKey(tx, "ts/"+key+"/")
+		if err != nil {
+			return err
+		}
+		c := b.Cursor()
+		startKey := []byte(fmt.Sprintf("%v", from.UnixNano()))
+		endKey := []byte(fmt.Sprintf("%v", to.UnixNano()))
+		for k, _ := c.Seek(startKey); k != nil && bytes.Compare(k, endKey) <= 0; k, _ = c.Next() {
+			b.Delete(k)
+		}
+		return nil
+	})
 }
 
 func (store *BoltStorage) getBucketForKey(tx *bolt.Tx, key string) (*bolt.Bucket, string, error) {

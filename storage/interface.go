@@ -19,6 +19,7 @@ type TimeSeriesEntry struct {
 type TimeSeriesStorage interface {
 	AddValue(key string, value float64) error
 	GetRange(key string, from time.Time, to time.Time) (chan *TimeSeriesEntry, error)
+	DeleteRange(key string, from time.Time, to time.Time) error
 }
 
 // Storage is a combined interface of KeyValueStorage and TimeSeriesStorage

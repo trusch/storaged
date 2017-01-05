@@ -98,6 +98,17 @@ func (store *MongoStorage) GetRange(key string, from time.Time, to time.Time) (c
 	return ch, nil
 }
 
+// DeleteRange returns a aspecific range in a timeseries
+func (store *MongoStorage) DeleteRange(key string, from time.Time, to time.Time) error {
+	c, _, err := store.getCollectionAndKey("ts/" + key + "/")
+	if err != nil {
+		return err
+	}
+
+	_, err = c.RemoveAll(bson.M{"k": bson.M{"$gte": from.UnixNano(), "$lte": to.UnixNano()}})
+	return err
+}
+
 // Close closes the db
 func (store *MongoStorage) Close() error {
 	store.session.Close()

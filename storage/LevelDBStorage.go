@@ -81,6 +81,23 @@ func (store *LevelDBStorage) GetRange(key string, from time.Time, to time.Time) 
 	return ch, nil
 }
 
+func (store *LevelDBStorage) DeleteRange(key string, from time.Time, to time.Time) error {
+	startKey := []byte(fmt.Sprintf("ts/%v%v", key, from.UnixNano()))
+	endKey := []byte(fmt.Sprintf("ts/%v%v", key, to.UnixNano()))
+	iter := store.db.NewIterator(&util.Range{Start: startKey, Limit: endKey}, nil)
+	if err := iter.Error(); err != nil {
+		return err
+	}
+	for iter.Next() {
+		err := store.db.Delete(iter.Key(), nil)
+		if err != nil {
+			return err
+		}
+	}
+	iter.Release()
+	return nil
+}
+
 // Close closes the db, flushing it eventually
 func (store *LevelDBStorage) Close() error {
 	return store.db.Close()

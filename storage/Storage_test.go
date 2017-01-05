@@ -148,6 +148,28 @@ func (suite *StorageSuite) TestGetRange() {
 	suite.False(ok)
 }
 
+func (suite *StorageSuite) TestDeleteRange() {
+	var stopTime time.Time
+	for i := 0; i < 100; i++ {
+		err := suite.store.AddValue("test", float64(i))
+		if i == 49 {
+			stopTime = time.Now()
+		}
+		suite.NoError(err)
+	}
+	err := suite.store.DeleteRange("test", stopTime, time.Now())
+	suite.NoError(err)
+	ch, err := suite.store.GetRange("test", time.Time{}, time.Now())
+	suite.NoError(err)
+	for i := 0; i < 50; i++ {
+		kv, ok := <-ch
+		suite.True(ok)
+		suite.Equal(float64(i), kv.Value)
+	}
+	_, ok := <-ch
+	suite.False(ok)
+}
+
 func (suite *StorageSuite) TestBadMetaStorageURI() {
 	store, err := NewMetaStorage("wrong://uri")
 	suite.Error(err)

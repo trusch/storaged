@@ -53,7 +53,9 @@ func (store *MetaStorage) AddValue(key string, value float64) error {
 func (store *MetaStorage) GetRange(key string, from time.Time, to time.Time) (chan *TimeSeriesEntry, error) {
 	return store.base.GetRange(key, from, to)
 }
-
+func (store *MetaStorage) DeleteRange(key string, from time.Time, to time.Time) error {
+	return store.base.DeleteRange(key, from, to)
+}
 func (store *MetaStorage) Close() error {
 	return store.base.Close()
 }
