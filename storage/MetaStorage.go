@@ -12,7 +12,7 @@ type MetaStorage struct {
 }
 
 // NewMetaStorage returns a new Storage object with the correct implementation for the given URI
-func NewMetaStorage(uriStr string) (*MetaStorage, error) {
+func NewMetaStorage(uriStr string) (Storage, error) {
 	uri, err := url.Parse(uriStr)
 	if err != nil {
 		return nil, err
@@ -23,6 +23,8 @@ func NewMetaStorage(uriStr string) (*MetaStorage, error) {
 		base, err = NewLevelDBStorage(uri.Host + uri.Path)
 	case "bolt":
 		base, err = NewBoltStorage(uri.Host + uri.Path)
+	case "mongodb":
+		base, err = NewMongoStorage(uriStr)
 	default:
 		err = errors.New("unknown uri scheme, try bolt:// or leveldb://")
 	}

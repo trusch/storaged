@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -22,25 +23,46 @@ func (suite *StorageSuite) toBytes(val interface{}) []byte {
 	return bs
 }
 
+func (suite *StorageSuite) clearStore() {
+	if suite.typ == "mongo" {
+		cmd := exec.Command("mongo", "test-store", "--eval", "db.kv.drop(); db['ts/test/value'].drop(); db['ts/test'].drop();")
+		cmd.Run()
+	} else {
+		os.RemoveAll("./test-store.db")
+	}
+}
+
 func (suite *StorageSuite) TearDownTest() {
 	err := suite.store.Close()
 	suite.NoError(err)
-	os.RemoveAll("./test-store.db")
-	if suite.typ == "leveldb" {
-		store, err := NewLevelDBStorage("./test-store.db")
-		suite.NoError(err)
-		suite.NotNil(store)
-		suite.store = store
-	} else {
-		store, err := NewBoltStorage("./test-store.db")
-		suite.NoError(err)
-		suite.NotNil(store)
-		suite.store = store
+	suite.clearStore()
+	switch suite.typ {
+	case "leveldb":
+		{
+			store, err := NewMetaStorage("leveldb://test-store.db")
+			suite.NoError(err)
+			suite.NotNil(store)
+			suite.store = store
+		}
+	case "bolt":
+		{
+			store, err := NewMetaStorage("bolt://test-store.db")
+			suite.NoError(err)
+			suite.NotNil(store)
+			suite.store = store
+		}
+	case "mongo":
+		{
+			store, err := NewMetaStorage("mongodb://localhost/test-store")
+			suite.NoError(err)
+			suite.NotNil(store)
+			suite.store = store
+		}
 	}
 }
 
 func (suite *StorageSuite) TearDownSuite() {
-	os.RemoveAll("./test-store.db")
+	suite.clearStore()
 }
 
 func (suite *StorageSuite) TestPut() {
@@ -105,6 +127,11 @@ func (suite *StorageSuite) TestAddValue() {
 	suite.NoError(err)
 }
 
+func (suite *StorageSuite) TestAddValueNestedBucket() {
+	err := suite.store.AddValue("test/value", 123.123)
+	suite.NoError(err)
+}
+
 func (suite *StorageSuite) TestGetRange() {
 	for i := 0; i < 100; i++ {
 		err := suite.store.AddValue("test", float64(i))
@@ -119,6 +146,24 @@ func (suite *StorageSuite) TestGetRange() {
 	}
 	_, ok := <-ch
 	suite.False(ok)
+}
+
+func (suite *StorageSuite) TestBadMetaStorageURI() {
+	store, err := NewMetaStorage("wrong://uri")
+	suite.Error(err)
+	suite.Empty(store)
+	store, err = NewMetaStorage("://foo")
+	suite.Error(err)
+	suite.Empty(store)
+}
+
+func (suite *StorageSuite) TestBadOpenRightsStorageURI() {
+	store, err := NewMetaStorage("leveldb:///root/forbidden")
+	suite.Error(err)
+	suite.Empty(store)
+	store, err = NewMetaStorage("bolt:///root/forbidden")
+	suite.Error(err)
+	suite.Empty(store)
 }
 
 func TestLevelDBStorage(t *testing.T) {
@@ -138,5 +183,15 @@ func TestBoltStorage(t *testing.T) {
 	s := new(StorageSuite)
 	s.store = store
 	s.typ = "bolt"
+	suite.Run(t, s)
+}
+
+func TestMongoStorage(t *testing.T) {
+	store, err := NewMetaStorage("mongodb://localhost/test-store")
+	assert.NoError(t, err)
+	assert.NotNil(t, store)
+	s := new(StorageSuite)
+	s.store = store
+	s.typ = "mongo"
 	suite.Run(t, s)
 }
