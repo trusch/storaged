@@ -80,7 +80,7 @@ func (srv *Server) handlePut(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	key := r.URL.Path
+	key := r.URL.Path[7:]
 	err = srv.store.Put(key, bs)
 	if err != nil {
 		log.Print("failed put: ", r.URL.Path)
@@ -90,7 +90,7 @@ func (srv *Server) handlePut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) handleGet(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Path
+	key := r.URL.Path[7:]
 	bs, err := srv.store.Get(key)
 	if err != nil {
 		log.Print("failed get: ", r.URL.Path)
@@ -101,7 +101,7 @@ func (srv *Server) handleGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Path
+	key := r.URL.Path[7:]
 	err := srv.store.Delete(key)
 	if err != nil {
 		log.Print("failed delete: ", r.URL.Path)
@@ -123,7 +123,7 @@ func (srv *Server) handleAddValue(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("'value' needs to be a float"))
 		return
 	}
-	key := r.URL.Path
+	key := r.URL.Path[7:]
 	err = srv.store.AddValue(key, val)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -132,7 +132,7 @@ func (srv *Server) handleAddValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (srv *Server) handleGetRange(w http.ResponseWriter, r *http.Request) {
-	key := r.URL.Path
+	key := r.URL.Path[7:]
 	n := r.FormValue("n")
 	var desiredPoints int64
 	if n != "" {
